@@ -588,7 +588,7 @@
     
         {/* Firma sutil */}
         <footer className="text-center mt-8 text-gray-500 text-xs">
-          &copy; Desarrollado por L I L - D.
+          &copy; Desarrollado por Gestion de Informacion.
         </footer>
       </main>
     );
