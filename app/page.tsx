@@ -410,7 +410,7 @@
           >
             <div className="flex flex-col sm:flex-row items-center justify-between">
               <CardTitle className="flex items-center space-y-2 space-x-2 mb-4 sm:mb-0 text-3xl">
-              Reservacione LG-AP
+              Reserva Sala de Reuniones LG - AP
               </CardTitle>
               <div className="flex flex-col sm:flex-row items-center space-y-2 sm:space-y-0 sm:space-x-5 space-x-0">
                 <Login onLoginSuccess={() => setIsLoggedIn(true)} />
