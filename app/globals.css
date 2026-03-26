@@ -70,3 +70,37 @@ body {
     @apply bg-background text-foreground;
   }
 }
+
+@layer components {
+  .event-card {
+    @apply transition-all duration-300 ease-apple;
+  }
+
+  .event-card:hover {
+    @apply shadow-lg;
+  }
+
+  .smooth-transition {
+    @apply transition-all duration-350 ease-apple;
+  }
+
+  .dialog-overlay {
+    @apply animate-fade-in;
+  }
+
+  .dialog-content {
+    @apply animate-slide-up;
+  }
+
+  .event-item {
+    @apply animate-fade-in;
+  }
+
+  .button-hover {
+    @apply transition-all duration-300 ease-apple hover:scale-105;
+  }
+
+  .text-ellipsis-custom {
+    @apply truncate;
+  }
+}

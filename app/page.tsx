@@ -103,35 +103,39 @@
       }
     };
 
-    return (
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogTrigger asChild>
-          <Button className="bg-blue-600 hover:bg-blue-700">Iniciar Sesión</Button>
-        </DialogTrigger>
-        <DialogContent className='py-10'>
-          <DialogHeader>
-            <DialogTitle>Iniciar Sesión</DialogTitle>
-          </DialogHeader>
-          <form onSubmit={handleLogin}>
-            {error && <div className="text-red-500">{error}</div>}
-            <Input 
-              className="h-10 mb-4"
-              type="email"
-              placeholder="Correo electrónico"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-            />
-            <Input
-              className="h-10 mb-4"
-              type="password"
-              placeholder="Contraseña"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
-            <Button type="submit">Iniciar Sesión</Button>
-          </form>
+  return (
+    <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+      <DialogTrigger asChild>
+        <Button className="bg-blue-600 hover:bg-blue-700 smooth-transition button-hover">Iniciar Sesión</Button>
+      </DialogTrigger>
+      <DialogContent className='py-10 dialog-content'>
+        <DialogHeader>
+          <DialogTitle className="animate-slide-up">Iniciar Sesión</DialogTitle>
+        </DialogHeader>
+        <form onSubmit={handleLogin} className="animate-fade-in space-y-4">
+          {error && <div className="text-red-500 animate-fade-in">{error}</div>}
+          <Input
+            className="h-10 smooth-transition focus:ring-2 animate-slide-up"
+            type="email"
+            placeholder="Correo electrónico"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+            style={{ animationDelay: '0.1s', opacity: 0 }}
+            onAnimationEnd={(e) => { (e.currentTarget as HTMLInputElement).style.opacity = '1'; }}
+          />
+          <Input
+            className="h-10 smooth-transition focus:ring-2 animate-slide-up"
+            type="password"
+            placeholder="Contraseña"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            style={{ animationDelay: '0.2s', opacity: 0 }}
+            onAnimationEnd={(e) => { (e.currentTarget as HTMLInputElement).style.opacity = '1'; }}
+          />
+          <Button type="submit" className="smooth-transition button-hover w-full animate-slide-up" style={{ animationDelay: '0.3s', opacity: 0 }} onAnimationEnd={(e) => { (e.currentTarget as HTMLButtonElement).style.opacity = '1'; }}>Iniciar Sesión</Button>
+        </form>
         </DialogContent>
       </Dialog>
     );
@@ -189,61 +193,70 @@
       setReservaciones(listaReservaciones);
     };
 
-    // Agregar el estado isLoading
-    const [isLoading, setIsLoading] = useState(false);
+  // Agregar el estado isLoading
+  const [isLoading, setIsLoading] = useState(false);
 
-    // Actualizar el método agregarReservacion
-    const agregarReservacion = async (e: React.FormEvent) => {
-      e.preventDefault();
-      setIsLoading(true); // Activar el estado de carga
-    
-      const nuevaFechaInicio = new Date(formData.fechaInicio);
-      const nuevaFechaFin = new Date(formData.fechaFin);
-    
-      // Si estamos en modo de edición, obtenemos la reservación seleccionada
-      if (modoEdicion && reservacionSeleccionada) {
-        const fechaInicioOriginal = new Date(reservacionSeleccionada.fechaInicio);
-        const fechaFinOriginal = new Date(reservacionSeleccionada.fechaFin);
-    
-        // Solo verificamos conflictos si las fechas han cambiado
-        if (nuevaFechaInicio.getTime() !== fechaInicioOriginal.getTime() || nuevaFechaFin.getTime() !== fechaFinOriginal.getTime()) {
-          const hayConflicto = reservaciones.some(reservacion => {
-            const fechaInicioExistente = new Date(reservacion.fechaInicio);
-            const fechaFinExistente = new Date(reservacion.fechaFin);
-            return (nuevaFechaInicio < fechaFinExistente && nuevaFechaFin > fechaInicioExistente);
-          });
-    
-          if (hayConflicto) {
-            Swal.fire({
-              position: 'top',
-              icon: "error",
-              title: "Las horas seleccionadas se cruzan con otra reservación existente.",
-              showConfirmButton: false,
-              timer: 1700
-            });
-            return;
-          }
-        }
-      } else {
-        // Verificamos conflictos solo si no estamos en modo de edición
-        const hayConflicto = reservaciones.some(reservacion => {
-          const fechaInicioExistente = new Date(reservacion.fechaInicio);
-          const fechaFinExistente = new Date(reservacion.fechaFin);
-          return (nuevaFechaInicio < fechaFinExistente && nuevaFechaFin > fechaInicioExistente);
-        });
-        
-        if (hayConflicto) {
-          Swal.fire({
-            position: 'top',
-            icon: "error",
-            title: "Las horas seleccionadas se cruzan con otra reservación existente.",
-            showConfirmButton: false,
-            timer: 1700
-          });
-          setIsLoading(false);
-          return;
-        }
+  // Función para validar conflictos de horarios
+  const hasTimeConflict = (startTime: Date, endTime: Date, excludeId?: string): boolean => {
+    return reservaciones.some(reservacion => {
+      // Excluir la reservación en edición si se proporciona su ID
+      if (excludeId && reservacion.id === excludeId) {
+        return false;
       }
+      
+      const existingStart = new Date(reservacion.fechaInicio);
+      const existingEnd = new Date(reservacion.fechaFin);
+      
+      // Validación correcta: no hay conflicto si una termina cuando otra comienza
+      // Conflicto solo si: startTime < existingEnd AND endTime > existingStart
+      return startTime < existingEnd && endTime > existingStart;
+    });
+  };
+
+  // Función para truncar títulos largos
+  const truncateTitle = (title: string, maxLength: number = 20): string => {
+    if (title.length > maxLength) {
+      return title.substring(0, maxLength) + '...';
+    }
+    return title;
+  };
+
+  // Actualizar el método agregarReservacion
+  const agregarReservacion = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true); // Activar el estado de carga
+  
+    const nuevaFechaInicio = new Date(formData.fechaInicio);
+    const nuevaFechaFin = new Date(formData.fechaFin);
+
+    // Validar que la hora de fin sea mayor que la hora de inicio
+    if (nuevaFechaFin <= nuevaFechaInicio) {
+      Swal.fire({
+        position: 'top',
+        icon: "error",
+        title: "La hora de fin debe ser mayor a la hora de inicio.",
+        showConfirmButton: false,
+        timer: 1700
+      });
+      setIsLoading(false);
+      return;
+    }
+  
+    // Verificar conflictos
+    const excludeReservationId = modoEdicion && reservacionSeleccionada ? reservacionSeleccionada.id : undefined;
+    const hayConflicto = hasTimeConflict(nuevaFechaInicio, nuevaFechaFin, excludeReservationId);
+    
+    if (hayConflicto) {
+      Swal.fire({
+        position: 'top',
+        icon: "error",
+        title: "Las horas seleccionadas se cruzan con otra reservación existente.",
+        showConfirmButton: false,
+        timer: 1700
+      });
+      setIsLoading(false);
+      return;
+    }
     
       try {
         const colorAleatorio = obtenerColorAleatorio(); // Obtener color aleatorio
@@ -400,19 +413,22 @@
             w-full 
             max-w-full 
             mx-auto 
+            animate-fade-in
+            smooth-transition
             ${modoOscuro ? 'bg-gray-800 border-gray-700' : 'bg-white'}
           `}
         >
           <CardHeader 
             className={`
               ${modoOscuro ? 'bg-gray-700 text-white' : 'bg-gray-100'}
+              animate-fade-in
             `}
           >
             <div className="flex flex-col sm:flex-row items-center justify-between">
-              <CardTitle className="flex items-center space-y-2 space-x-2 mb-4 sm:mb-0 text-3xl">
+              <CardTitle className="flex items-center space-y-2 space-x-2 mb-4 sm:mb-0 text-3xl animate-slide-up">
               Reserva Sala de Reuniones LG - AP
               </CardTitle>
-              <div className="flex flex-col sm:flex-row items-center space-y-2 sm:space-y-0 sm:space-x-5 space-x-0">
+              <div className="flex flex-col sm:flex-row items-center space-y-2 sm:space-y-0 sm:space-x-5 space-x-0 animate-fade-in">
                 <Login onLoginSuccess={() => setIsLoggedIn(true)} />
                 <Button 
                   onClick={toggleModoOscuro} 
@@ -421,7 +437,7 @@
                     ${modoOscuro 
                       ? 'bg-gray-700 text-white hover:bg-gray-600' 
                       : 'bg-white text-black hover:bg-gray-100'
-                    }w-full sm:w-auto
+                    }w-full sm:w-auto smooth-transition button-hover
                   `}
                 >
                   {modoOscuro ? <Sun className="mr-2" /> : <Moon className="mr-2" />}
@@ -431,56 +447,59 @@
                 <Dialog open={isNewEventOpen} onOpenChange={setIsNewEventOpen}>
                 <DialogTrigger asChild>
                   <Button
-                        className="bg-red-600 hover:bg-red-700 ml-2 w-full sm:w-auto "
+                        className="bg-red-600 hover:bg-red-700 ml-2 w-full sm:w-auto smooth-transition button-hover"
                   >
-                        <Plus className="mr-2 h-4 w-4 " />
+                        <Plus className="mr-2 h-4 w-4" />
                         {modoEdicion ? 'Actualizar' : 'Nuevo'}
                   </Button>
                     </DialogTrigger>
-                  <DialogContent>
+                  <DialogContent className="dialog-content">
                     <DialogHeader>
-                      <DialogTitle>{modoEdicion ? 'Editar Reservación ' : 'Nueva Reservación'}</DialogTitle>
+                      <DialogTitle className="animate-slide-up">{modoEdicion ? 'Editar Reservación' : 'Nueva Reservación'}</DialogTitle>
                     </DialogHeader>
-                    <form onSubmit={agregarReservacion} className="space-y-2">
-                      <div className="space-y-2">
+                    <form onSubmit={agregarReservacion} className="space-y-2 animate-fade-in">
+                      <div className="space-y-2 animate-slide-up" style={{ animationDelay: '0.1s', opacity: 0 }} onAnimationEnd={(e) => { (e.currentTarget as HTMLDivElement).style.opacity = '1'; }}>
                         <Label htmlFor="titulo">Título</Label>
                         <Input
                           id="titulo"
                           value={formData.titulo}
                           onChange={(e) => setFormData({ ...formData, titulo: e.target.value })}
+                          className="smooth-transition focus:ring-2"
                           required
                         />
                       </div>
                       
-                      <div className="space-y-2">
+                      <div className="space-y-2 animate-slide-up" style={{ animationDelay: '0.15s', opacity: 0 }} onAnimationEnd={(e) => { (e.currentTarget as HTMLDivElement).style.opacity = '1'; }}>
                         <Label htmlFor="fechaInicio">Fecha y hora de inicio</Label>
                         <Input
                           id="fechaInicio"
                           type="datetime-local"
                           value={formData.fechaInicio}
                           onChange={(e) => setFormData({ ...formData, fechaInicio: e.target.value })}
+                          className="smooth-transition focus:ring-2"
                           required
                         />
                       </div>
                       
-                      <div className="space-y-2">
+                      <div className="space-y-2 animate-slide-up" style={{ animationDelay: '0.2s', opacity: 0 }} onAnimationEnd={(e) => { (e.currentTarget as HTMLDivElement).style.opacity = '1'; }}>
                         <Label htmlFor="fechaFin">Fecha y hora de fin</Label>
                         <Input
                           id="fechaFin"
                           type="datetime-local"
                           value={formData.fechaFin}
                           onChange={(e) => setFormData({ ...formData, fechaFin: e.target.value })}
+                          className="smooth-transition focus:ring-2"
                           required
                         />
                       </div>
                       
-                      <div className="space-y-2">
+                      <div className="space-y-2 animate-slide-up" style={{ animationDelay: '0.25s', opacity: 0 }} onAnimationEnd={(e) => { (e.currentTarget as HTMLDivElement).style.opacity = '1'; }}>
                         <Label htmlFor="estado">Estado</Label>
                         <Select
                           value={formData.estado}
                           onValueChange={(value: 'ocupado' | 'disponible' | 'enReunion') => setFormData({ ...formData, estado: value })}
                         >
-                          <SelectTrigger>
+                          <SelectTrigger className="smooth-transition">
                             <SelectValue placeholder="Seleccionar estado" />
                           </SelectTrigger>
                           <SelectContent>
@@ -491,11 +510,11 @@
                         </Select>
                       </div>
                       
-                      <div className="flex justify-end space-x-2">
-                        <Button type="button" variant="outline" onClick={limpiarFormulario}>
+                      <div className="flex justify-end space-x-2 animate-slide-up" style={{ animationDelay: '0.3s', opacity: 0 }} onAnimationEnd={(e) => { (e.currentTarget as HTMLDivElement).style.opacity = '1'; }}>
+                        <Button type="button" variant="outline" onClick={limpiarFormulario} className="smooth-transition button-hover">
                           Limpiar
                         </Button>
-                        <Button type="submit" disabled={isLoading}>
+                        <Button type="submit" disabled={isLoading} className="smooth-transition button-hover">
                           {isLoading ? 'Cargando...' : (modoEdicion ? 'Actualizar' : 'Guardar')}
                         </Button>
                       </div>
@@ -504,15 +523,29 @@
                 </Dialog>
               </div>
             </div>
-            <div className="flex items-center justify-between mt-4">
+            <div className="flex items-center justify-between mt-4 animate-fade-in">
               <div className="flex items-center gap-2">
-                <Button variant="outline" onClick={() => navegarSemana('anterior')}>
+                <Button 
+                  variant="outline" 
+                  onClick={() => navegarSemana('anterior')}
+                  className="smooth-transition button-hover"
+                >
                   <ChevronLeft className="h-4 w-4 text-black" />
                 </Button>
-                <Button variant="outline" onClick={() => navegarSemana('siguiente')}>
+                <Button 
+                  variant="outline" 
+                  onClick={() => navegarSemana('siguiente')}
+                  className="smooth-transition button-hover"
+                >
                   <ChevronRight className="h-4 w-4 text-black" />
                 </Button>
-                <Button variant="secondary" onClick={() => setSemanaActual(new Date())}>Hoy</Button>
+                <Button 
+                  variant="secondary" 
+                  onClick={() => setSemanaActual(new Date())}
+                  className="smooth-transition button-hover"
+                >
+                  Hoy
+                </Button>
               </div>
             </div>
           </CardHeader>
@@ -534,11 +567,21 @@
                       border 
                       rounded-lg 
                       p-3 
+                      smooth-transition
+                      hover:shadow-lg
                       ${modoOscuro 
                         ? 'bg-gray-700 border-gray-600 text-white'  // Forzando el texto en negro en modo oscuro
                         : 'bg-gray-100 text-black'  // También en modo claro
                       }
                     `}
+                    style={{
+                      animation: `slideUp 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards`,
+                      animationDelay: `${index * 0.08}s`,
+                      opacity: 0
+                    }}
+                    onAnimationEnd={(e) => {
+                      (e.currentTarget as HTMLDivElement).style.opacity = '1';
+                    }}
                   >
                     <div className="font-semibold mb-2 text-sm sm:text-base">
                       {format(dia, 'EEEE d', { locale: es })}
@@ -546,37 +589,59 @@
                     <div className="space-y-2">
                       {reservaciones
                         .filter(res => isSameDay(new Date(res.fechaInicio), dia))
-                        .map(reservacion => (
+                        .map((reservacion, eventIndex) => (
                           <div
                             key={reservacion.id}
                             className={`
                               p-2 rounded-lg 
-                              ${reservacionSeleccionada?.id === reservacion.id ? 'border-2 border-blue-500' : ''} 
+                              event-card
+                              transition-all 
+                              duration-300 
+                              ease-apple
+                              cursor-pointer
+                              hover:shadow-md
+                              ${reservacionSeleccionada?.id === reservacion.id ? 'border-2 border-blue-500 scale-105' : ''} 
                               ${reservacion.color || obtenerColorEstado(reservacion.estado)}
+                              group
                             `}
                             onClick={() => editarReservacion(reservacion)}
+                            title={reservacion.titulo}
+                            style={{
+                              animation: `slideUp 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards`,
+                              animationDelay: `${eventIndex * 0.05}s`,
+                              opacity: 0
+                            }}
+                            onAnimationEnd={(e) => {
+                              (e.currentTarget as HTMLDivElement).style.opacity = '1';
+                            }}
                           >
                             <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-2">
-                                <div className={`w-2 h-2 rounded-full ${obtenerColorEstado(reservacion.estado)}`} />
-                                <span><span className="text-black">{format(new Date(reservacion.fechaInicio), 'HH:mm')} - {format(new Date(reservacion.fechaFin), 'HH:mm')}</span> {/* Texto del evento siempre en negro */}</span>
+                              <div className="flex items-center gap-2 flex-1 min-w-0">
+                                <div className={`w-2 h-2 rounded-full flex-shrink-0 ${obtenerColorEstado(reservacion.estado)}`} />
+                                <span className="text-black text-sm">{format(new Date(reservacion.fechaInicio), 'HH:mm')} - {format(new Date(reservacion.fechaFin), 'HH:mm')}</span>
                               </div>
                               <Button
                                 variant="ghost"
                                 size="icon"
+                                className="button-hover opacity-0 group-hover:opacity-100 transition-opacity duration-300"
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   eliminarReservacion(reservacion.id);
                                 }}
                               >
-                                <Trash2 className="h-4 w-4 text-black" />  {/* Icono en negro */}
+                                <Trash2 className="h-4 w-4 text-black" />
                               </Button>
                             </div>
-                            <div className="font-medium text-gray-600">{reservacion.titulo}</div>
+                            <div 
+                              className="font-medium text-gray-600 truncate text-sm"
+                              title={reservacion.titulo}
+                            >
+                              {truncateTitle(reservacion.titulo, 25)}
+                            </div>
                           </div>
                         ))}
                       {reservaciones.filter(res => isSameDay(new Date(res.fechaInicio), dia)).length === 0 && (
-                        <div className="text-gray-500 text-sm">No hay reservaciones para este día.</div>
+                        <div className="text-gray-500 text-sm animate-fade-in">No hay reservaciones para este día.</div>
                       )}
                     </div>
                   </div>
@@ -587,7 +652,7 @@
         </Card>
     
         {/* Firma sutil */}
-        <footer className="text-center mt-8 text-gray-500 text-xs">
+        <footer className="text-center mt-8 text-gray-500 text-xs animate-fade-in smooth-transition hover:text-gray-600">
           &copy; Desarrollado por Gestion de Informacion.
         </footer>
       </main>
